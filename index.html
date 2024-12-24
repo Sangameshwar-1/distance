@@ -3,62 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Calculator by Place Name</title>
+    <title>Send Email via Gmail API</title>
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
-    <h1>Distance Calculator</h1>
-    <form id="distanceForm">
-        <label for="startPlace">Start Place: </label>
-        <input type="text" id="startPlace" placeholder="e.g., Hyderabad" required>
-        <br>
-        <label for="endPlace">End Place: </label>
-        <input type="text" id="endPlace" placeholder="e.g., Mumbai" required>
-        <br>
-        <button type="submit">Calculate Distance</button>
-    </form>
-    <p id="result"></p>
 
-    <script>
-        const apiKey = '5b3ce3597851110001cf6248707eb42f8c9c4160961e9baecd37b843'; // Replace with your OpenRouteService API key
+    <h1>Send Email using Gmail API</h1>
 
-        async function getCoordinates(place) {
-            const geocodeUrl = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(place)}`;
-            const response = await fetch(geocodeUrl);
-            const data = await response.json();
-            if (data.features && data.features.length > 0) {
-                const [lon, lat] = data.features[0].geometry.coordinates;
-                return { lat, lon };
-            } else {
-                throw new Error(`Unable to find coordinates for ${place}`);
-            }
+    <!-- Buttons for User Actions -->
+    <button id="authorize_button" onclick="handleAuthClick()">Authorize</button>
+    <button id="send_email_button" onclick="sendEmail()" style="display:none;">Send Email</button>
+
+    <script type="text/javascript">
+        let gapiLoaded = false;
+
+        // Initialize the API client
+        function loadClient() {
+            gapi.client.setApiKey('AIzaSyC9v00XdQfJan1EdKxDN9QENbTRyi1P0-o'); // Replace with your API key
+            return gapi.client.load('https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest');
         }
 
-        async function calculateDistance(event) {
-            event.preventDefault();
-            const startPlace = document.getElementById('startPlace').value;
-            const endPlace = document.getElementById('endPlace').value;
-            const result = document.getElementById('result');
-
-            try {
-                // Get coordinates for both places
-                const startCoords = await getCoordinates(startPlace);
-                const endCoords = await getCoordinates(endPlace);
-
-                // Fetch distance
-                const directionsUrl = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startCoords.lon},${startCoords.lat}&end=${endCoords.lon},${endCoords.lat}`;
-                const response = await fetch(directionsUrl);
-                const data = await response.json();
-                const distance = data.features[0].properties.segments[0].distance / 1000; // Convert meters to kilometers
-                const duration = data.features[0].properties.segments[0].duration / 60; // Convert seconds to minutes
-
-                result.textContent = `Distance: ${distance.toFixed(2)} km, Duration: ${duration.toFixed(2)} minutes`;
-            } catch (error) {
-                console.error(error);
-                result.textContent = `Error: ${error.message}`;
-            }
+        // Handle Authorization
+        function handleAuthClick() {
+            gapi.auth2.getAuthInstance().signIn().then(function() {
+                document.getElementById('authorize_button').style.display = 'none';
+                document.getElementById('send_email_button').style.display = 'block';
+            });
         }
 
-        document.getElementById('distanceForm').addEventListener('submit', calculateDistance);
+        // Send an email
+        function sendEmail() {
+            var email = [
+                'From: "your-email@gmail.com"\r\n',
+                'To: "recipient@example.com"\r\n',
+                'Subject: Test Email\r\n\r\n',
+                'Hello, this is a test email sent using the Gmail API!'
+            ].join('');
+
+            // Base64 encode the email
+            var base64EncodedEmail = window.btoa(unescape(encodeURIComponent(email)));
+
+            // Send the email using Gmail API
+            var request = gapi.client.gmail.users.messages.send({
+                'userId': 'me',
+                'resource': {
+                    'raw': base64EncodedEmail
+                }
+            });
+
+            // Execute the request and log the response
+            request.execute(function(response) {
+                console.log(response);
+                alert("Email sent!");
+            });
+        }
+
+        // Initialize the Google API Client
+        function initClient() {
+            gapi.auth2.init({
+                client_id: '821050995843-8td32c75sus3oiqfol82gnsem0ncdtih.apps.googleusercontent.com', // Replace with your Client ID
+                scope: 'https://www.googleapis.com/auth/gmail.send'
+            }).then(function() {
+                gapiLoaded = true;
+                loadClient();
+            });
+        }
+
+        // Load the API client and authentication library
+        gapi.load('client:auth2', initClient);
     </script>
+    
 </body>
 </html>
+
